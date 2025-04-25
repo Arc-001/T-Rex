@@ -1,163 +1,138 @@
 import socket
 import threading
 
-class server_socket:
-    def __init__(self, host = socket.gethostname(), port = 5000, max_clients = 1):
-        self.host = host
-        self.port = port
-        self.active_clients = 0
-        self.connections = []
-        self.addresses = []
-        self.max_clients = max_clients
+class message_box:
+    def __init__(self):
+        self.recv_messages = []
+        self.recv_messages_cursor = -1
+        self.send_messages = []
+        self.send_messages_cursor = -1
+        self.send_lock = threading.Lock()
+        self.recv_lock = threading.Lock()
 
-        # create a socket object
-
-        try:
-            self.server_soc = socket.socket() #default is AF_INET, SOCK_STREAM
-
-            self.server_soc.bind((self.host, self.port))
-
-            self.server_soc.listen(max_clients)
-            print(f"Server started at {self.host}:{self.port}")
-
-        except socket.error as e:
-            print(f"Unable to create socket: {e}")
+    def add_recv_message(self, message : str):
+        with self.recv_lock:
+            self.recv_messages.append(message)
         
-
-    def accept_client(self):
-        try:
-            conn, addr = self.server_soc.accept()
-            print(f"Connection from: {addr}")
-            self.active_clients += 1
-            self.connections.append(conn)
-            self.addresses.append(addr)
-            return conn, addr
-        except socket.error as e:
-            print(f"Unable to accept client: {e}")
-            return None, None
+    def add_send_message(self, message):
+        with self.send_lock:
+            self.send_messages.append(message)
     
-    def deny_client(self, conn):
-        try:
-            conn.close()
-            self.active_clients -= 1
-            print("Client disconnected")
-        except socket.error as e:
-            print(f"Unable to disconnect client: {e}")
-
-    def get_connections(self):
-        return self.connections
-    
-    def get_addresses(self):
-        return self.addresses
-
-    def recieve_data(self,conn):
-        if conn in self.connections:
-            try:
-                data = conn.recv(1024).decode()
-                return data
-            except socket.error as e:
-                print(f"Unable to receive data from : {e}")
+    def get_recv_message(self):
+        with self.recv_lock:
+            if self.recv_messages_cursor < len(self.recv_messages) - 1 and len(self.recv_messages)>0:
+                self.recv_messages_cursor += 1
+                return self.recv_messages[self.recv_messages_cursor]
+            else:
                 return None
-        else:
-            print("Connection not established")
-            return None
+    
+    def get_send_message(self):
+        with self.send_lock:
+            if self.send_messages_cursor < len(self.send_messages) - 1 and len(self.send_messages)>0:
+                self.send_messages_cursor += 1
+                return self.send_messages[self.send_messages_cursor]
+            else:
+                return None
+    
+    def get_all_recv_messages(self):
+        with self.recv_lock:
+            return self.recv_messages
+    
+    def get_all_send_messages(self):
+        with self.send_lock:
+            return self.send_messages
+    
+    def set_sent_cursor(self, pos):
+        with self.send_lock:
+            if pos < len(self.send_messages) and pos >= 0:
+                self.send_messages_cursor = pos
+            else:
+                raise IndexError("Cursor position out of range")
         
-    def send_data(self, conn, data):
-        if conn in self.connections:
-            try:
-                conn.send(data.encode())
-            except socket.error as e:
-                print(f"Unable to send data to : {e}")
+    def set_recv_cursor(self, pos):
+        with self.recv_lock:
+            if pos < len(self.recv_messages) and pos >= 0:
+                self.recv_messages_cursor = pos
+            else:
+                raise IndexError("Cursor position out of range")
+    
+    def clear_recv_messages(self):
+        with self.recv_lock:
+            self.recv_messages = []
+            self.recv_messages_cursor = -1
+    
+    def clear_send_messages(self):
+        with self.send_lock:
+            self.send_messages = []
+            self.send_messages_cursor = -1
+
+
+
+class post_office:
+    def __init__(self, no_of_letter_box:int):
+        self.addr_msg_box = {}
+        self.max_msg_box = no_of_letter_box
+
+    
+    def add_msg_box(self, addr):
+        if len(self.addr_msg_box) < self.max_msg_box:
+            self.addr_msg_box[addr] = message_box()
+            return self.addr_msg_box[addr]
+
         else:
-            print("Connection not established")
-    
-    def close(self):
-        for conn in self.connections:
-            conn.close()
-        self.server_soc.close()
-        print("Server closed")
-
-class multithreaded_server_socket(server_socket):
-    def __init__(self, host = socket.gethostname(), port = 5000, max_clients = 1):
-        super().__init__(host, port, max_clients)
-        self.threads = []
-
-    def client_recieve(self, conn, addr):
-        while True:
-            data = self.recieve_data(conn)
-            if not data:
-                print(f"Client {addr} disconnected")
-                self.deny_client(conn)
-                break
-            print(f"{addr} sent {data}")
-            yield data
-            
-    def client_send(self, conn, addr, data):
-        self.send_data(conn, data)
-        print(f"Sent {data} to {addr}")
-        yield data
-
-    def multithreaded_duplex(self, conn, addr):
-        persistant_reception = threading.Thread(target=self.client_recieve, args=(conn, addr))
-        persistant_reception.start()
-        self.threads.append(persistant_reception)
-        while True:
-            data = input("Enter data to send: ")
-            self.client_send(conn, addr, data)
-            if data == "!exit":
-                break
-    
-def example():
-    server = multithreaded_server_socket()
-    conn, addr = server.accept_client()
-    if conn:
-        server.multithreaded_duplex(conn, addr)
-    else:
-        print("No connection established")
-    server.close()
-
-if __name__ == "__main__":
-    example()
-
-
-    
-
+            raise Exception("Max number of message boxes reached")
         
-
-
-
+    def remove_msg_box(self, addr):
+        if addr in self.addr_msg_box:
+            del self.addr_msg_box[addr]
+        else:
+            raise Exception("Message box not found")
+        
+    def get_msg_box(self, addr):
+        try:
+            return self.addr_msg_box[addr]
+        except KeyError:
+            raise Exception("Message box not found")
+        
+    def get_all_msg_box(self):
+        return self.addr_msg_box
+        
     
 
+    
+    def get_message_box(self, )
+
+# class socket_server:
+#     def __init__(self, host = "localhost", port = 5000,max_listen = 2):
+#         self.host = host
+#         self.port = port
+#         self.sock = socket.socket()
+#         self.sock.bind((self.host,self.port))
+#         self.sock.listen(max_listen)
+#         self.max_listen = max_listen
+#         self.post_office = post_office(max_listen)
+#         self.addr_conn_dict = {}
+#         self.conn_semaphore = threading.Semaphore(max_listen)
+#         wait_conn_thread = threading.Thread(target=self.wait_conn)
+#         wait_conn_thread.start()
+    
+#     def wait_conn(self):
+#         while True:
+#             self.conn_semaphore.acquire()
+#             conn, addr = self.sock.accept()
+#             self.addr_conn_dict[addr] = conn
+#             print(f"{addr} connected")
+#             self.post_office.add_msg_box(addr)
+#             print(f"{addr} message box created")
+#             recv_thread = threading.Thread(target=self.recv_message_daemon, args=(conn, addr))
+#             send_thread = threading.Thread(target=self.send_message_daemon, args=(conn, addr))
+#             recv_thread.start()
+#             send_thread.start()
+#             print(f"{addr} recv and send thread started")
+
+    
+#     def recv_message()
 
 
 
 
-
-
-# def start_up():
-#     host = socket.gethostname()
-#     port = 5000
-
-#     server_socket = socket.socket()  # get instance
-#     # look closely. The bind() function takes tuple as argument
-#     server_socket.bind((host, port))  # bind host address and port together
-
-#     # configure how many client the server can listen simultaneously
-#     server_socket.listen(2)
-#     conn, address = server_socket.accept()  # accept new connection
-#     print("Connection from: " + str(address))
-#     while True:
-#         # receive data stream. it won't accept data packet greater than 1024 bytes
-#         data = conn.recv(1024).decode()
-#         if not data:
-#             # if data is not received break
-#             break
-#         print("from connected user: " + str(data))
-#         data = input(' -> ')
-#         conn.send(data.encode())  # send data to the client
-
-#     conn.close()  # close the connection
-
-
-# if __name__ == '__main__':
-#     start_up()
