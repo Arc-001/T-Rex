@@ -1,6 +1,6 @@
-import socket_
+from com.client_socket import *
 
-sock = socket_.socket_client()
+sock = socket_client()
 
 while True:
     try:

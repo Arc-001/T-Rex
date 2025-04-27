@@ -1,6 +1,6 @@
-import socket_
+from com.server_socket import *
 
-socket_server = socket_.socket_server()
+socket_server = socket_server()
 
 while True:
     data = input("Enter message to send: ")
