@@ -132,6 +132,13 @@ class socket_server:
         wait_conn_thread = threading.Thread(target=self.wait_conn)
         wait_conn_thread.start()
     
+    def get_established_connections(self):
+        return self.addr_conn_dict
+    
+    def send_all(self, data:str):
+        for addr in self.addr_conn_dict:
+            self.send_message(addr, data)
+    
     def wait_conn(self):
         while True:
             self.conn_semaphore.acquire()
@@ -180,6 +187,7 @@ class socket_server:
         while True:
             conn = self.addr_conn_dict[addr]
             data = conn.recv(self.data_len).decode()
+            print(f"\n\n\nReceived message from {addr}: {data}")
             if not data:
                 self.close_conn(addr)
                 print(f"Connection closed with {addr}")
@@ -191,6 +199,7 @@ class socket_server:
             conn = self.addr_conn_dict[addr]
         except:
             raise socket.error("Connection not yet established")
+        print (f"\n\nsending message to {addr}: {data}")
         conn.send(data.encode())
         self.post_office.add_send_msg(addr ,data)
 
@@ -213,12 +222,15 @@ class socket_client:
         self.port = port
         self.sock = socket.socket()
         self.post_box = message_box()
-        self.establish_conn()
+        establish_conn_thread = threading.Thread(target=self.establish_conn)
+        establish_conn_thread.start()
+
 
     def establish_conn(self):
         try:
             self.sock.connect((self.host, self.port))
             recv_thread = threading.Thread(target=self.recv_message_daemon)
+            recv_thread.start()
         except socket.error as e:
             raise e
         
@@ -226,6 +238,7 @@ class socket_client:
         try:
             while True:
                 data = self.sock.recv(self.data_len).decode()
+                print(f"Received message: {data}")
                 if not data:
 
                     #call the gracefull closing of connection
@@ -240,7 +253,7 @@ class socket_client:
     def send_message(self, data:str):
         try:
             self.sock.send(data.encode())
-            self.message_box.add_send_message(data)
+            self.post_box.add_send_message(data)
         except Exception as e:
             print(f"error sending the message: {data}\n error is : {e}")
     
