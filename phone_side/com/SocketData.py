@@ -1,5 +1,5 @@
 import threading
-
+import queue
 
 class message_box:
     def __init__(self):
@@ -9,10 +9,20 @@ class message_box:
         self.send_messages_cursor = -1
         self.send_lock = threading.Lock()
         self.recv_lock = threading.Lock()
+        self.redirect_now = False
+        self.trigger_recv = threading.Event()
+
+        self.shared_now_buffer = queue.Queue()
+        self.shared_now_buffer_lock = threading.Lock()
 
     def add_recv_message(self, message : str):
         with self.recv_lock:
             self.recv_messages.append(message)
+            if self.redirect_now:
+                with self.shared_now_buffer_lock:
+                    self.shared_now_buffer.put(message)
+                self.trigger_recv.set()
+                self.redirect_now = False
         
     def add_send_message(self, message):
         with self.send_lock:
@@ -65,6 +75,15 @@ class message_box:
         with self.send_lock:
             self.send_messages = []
             self.send_messages_cursor = -1
+
+    def get_msg_from_now(self):
+        self.redirect_now = True
+        self.trigger_recv.clear()
+        self.trigger_recv.wait()
+        with self.shared_now_buffer_lock:
+            return self.shared_now_buffer.get()
+            
+
 
 
 

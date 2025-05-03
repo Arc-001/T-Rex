@@ -97,8 +97,35 @@ def play_media():
     result = exec_arb(["termux-media-player","play"])
     return result
 
+def play_file(path):
+    result = exec_arb(["termux-media-player","play",path])
+    return result
+
 def pause_media():
+    result = exec_arb(["termux-media-player", "pause"])
+    return result
+
+def stop_media():
+    result =  exec_arb(["termux-media-player","stop"])
+    return result
 
 
+# TODO
+'''
+Camera commands
+microphone commands
+notification commands
+sms commands
+call commands
+tts commands
+storage commands
+
+misc.
+volume commands
+wallpaper
+brightness
+torch 
+
+'''
 
 

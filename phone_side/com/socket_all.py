@@ -136,7 +136,7 @@ class socket_server:
         return self.addr_conn_dict
     
     def send_all(self, data:str):
-        for addr in self.addr_conn_dict:
+        for addr in socket.socket(self.addr_conn_dict.keys():
             self.send_message(addr, data)
     
     def wait_conn(self):

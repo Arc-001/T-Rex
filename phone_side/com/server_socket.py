@@ -29,7 +29,7 @@ class socket_server:
         while True:
             self.conn_semaphore.acquire()
             conn, addr = self.sock.accept()
-            self.addr_conn_dict[addr] = conn
+            self.addr_conn_dict[tuple(addr)] = conn
             print(f"{addr} connected")
             self.post_office.add_msg_box(addr)
             print(f"{addr} message box created")
@@ -74,10 +74,10 @@ class socket_server:
             conn = self.addr_conn_dict[addr]
             data = conn.recv(self.data_len).decode()
             print(f"\n\n\nReceived message from {addr}: {data}")
-            if not data:
-                self.close_conn(addr)
-                print(f"Connection closed with {addr}")
-                break
+            # if not data:
+            #     self.close_conn(addr)
+            #     print(f"Connection closed with {addr}")
+            #     break
             self.post_office.add_recv_msg(addr, data)
 
     def send_message(self,addr, data:str):
@@ -88,6 +88,31 @@ class socket_server:
         print (f"\n\nsending message to {addr}: {data}")
         conn.send(data.encode())
         self.post_office.add_send_msg(addr ,data)
+    
+    # def send_and_recv_blocking(self, addr, data:str):
+    #     try:
+    #         conn = self.addr_conn_dict[addr]
+    #     except:
+    #         raise socket.error("conn does not exisit")
+
+
+    #     shared_buffer = []
+
+
+    #     def send_and_recv_block(addr, data):
+    #         self.send_message(addr, data)
+    #         message_box_recv = self.post_office.get_msg_box(addr)
+    #         return shared_buffer.append(data)
+        
+        
+    #     child_blocked_thread = threading.Thread(target=send_and_recv_block, args=(addr, data))
+    #     child_blocked_thread.start()
+    #     child_blocked_thread.join()
+
+    #     return shared_buffer[0]
+
+    def get_msg_box(self, addr):
+        return self.post_office.get_msg_box(addr)
 
     def get_recv_messages(self, addr):
         return self.post_office.get_msg_box(addr)
