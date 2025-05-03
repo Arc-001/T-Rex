@@ -74,10 +74,10 @@ class socket_server:
             conn = self.addr_conn_dict[addr]
             data = conn.recv(self.data_len).decode()
             print(f"\n\n\nReceived message from {addr}: {data}")
-            # if not data:
-            #     self.close_conn(addr)
-            #     print(f"Connection closed with {addr}")
-            #     break
+            if not data:
+                self.close_conn(addr)
+                print(f"Connection closed with {addr}")
+                break
             self.post_office.add_recv_msg(addr, data)
 
     def send_message(self,addr, data:str):
