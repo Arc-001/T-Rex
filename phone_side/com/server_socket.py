@@ -4,7 +4,7 @@ import threading
 
 
 class socket_server:
-    def __init__(self, host = "localhost", port = 5000,max_listen = 2, data_len = 1024):
+    def __init__(self, host = "0.0.0.0", port = 5000,max_listen = 2, data_len = 1024):
         self.data_len = data_len
         self.host = host
         self.port = port
