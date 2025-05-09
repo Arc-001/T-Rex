@@ -1,6 +1,6 @@
 #importing key generator and unique id labler
-from pypg import PGPKey, PGPUID, PGPMessage
-from pypg.constants import PubKeyAlgorithm, KeyFlags, HashAlgorithm, SymmetricKeyAlgorithm, CompressionAlgorithm
+from pgpy import PGPKey, PGPUID, PGPMessage
+from pgpy.constants import PubKeyAlgorithm, KeyFlags, HashAlgorithm, SymmetricKeyAlgorithm, CompressionAlgorithm
 
 class key:
     def __init__(self, uuid: str, hostname: str, password:str):
@@ -15,7 +15,7 @@ class key:
         self.key = PGPKey.new(PubKeyAlgorithm.RSAEncryptOrSign, 2048)
         
         #makeing the lable for the key
-        uid = PGPUID.new(uuid, hostname = hostname, password = password)
+        uid = PGPUID.new(uuid, email = hostname, comment= password)
 
         #attaching the lable to the key
         
@@ -29,7 +29,7 @@ class key:
         CompressionAlgorithm.Uncompressed
         '''
         
-        key.add_uid(
+        self.key.add_uid(
             uid,
             usage = [KeyFlags.Sign, KeyFlags.EncryptCommunications, KeyFlags.EncryptStorage],
             hashes = [HashAlgorithm.SHA256],
@@ -37,6 +37,7 @@ class key:
             compress = [CompressionAlgorithm.Uncompressed]
 
         )
+        return self.key
 
     def save_key(self, path: str):
 
@@ -65,7 +66,7 @@ and unlock using
 with my_key.unlock("password"):
 '''
 
-def encrypt_message_file(pub_key : str, message:str):
+def encrypt_message_file(pub_key : str, message_str:str):
     pub_key, info = PGPKey.from_file(pub_key)
     info = dict(info)
     # printing the key info
@@ -74,7 +75,7 @@ def encrypt_message_file(pub_key : str, message:str):
         print (f"{key}: {info[key]}")
 
     #create the message object to work with encryption in pypg
-    message = PGPMessage.new("This is a test to check the encryption")
+    message = PGPMessage.new(f"{message_str}")
 
     #encrypting the message
 
@@ -104,8 +105,10 @@ def decrypt_message(priv_key:str, enc_message:str):
 
     #printing the decrypted message for debugging
     print ("-----------------decrypted message-----------------")
-    print (f"decrypted message is {decrypted}")
+    print (f"decrypted message is {decrypted.message}")
     
 
     return str(decrypted)
+
+
 
