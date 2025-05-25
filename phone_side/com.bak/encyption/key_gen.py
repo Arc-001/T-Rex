@@ -1,7 +1,6 @@
 #importing key generator and unique id labler
 from pgpy import PGPKey, PGPUID, PGPMessage
 from pgpy.constants import PubKeyAlgorithm, KeyFlags, HashAlgorithm, SymmetricKeyAlgorithm, CompressionAlgorithm
-import os
 
 class key:
     def __init__(self, uuid: str, hostname: str, password:str):
@@ -42,8 +41,6 @@ class key:
 
     def save_key(self, path: str):
 
-        #check and make if not exist
-        os.makedirs(os.path.dirname(path), exist_ok=True)
         #save private key
         with open(path, "w") as key_file_private:
             key_file_private.write(str(self.key))
@@ -54,12 +51,6 @@ class key:
 
     def get_key(self):
         return self.key
-    
-    def get_public_key(self):
-        return str(self.key.pubkey)
-    
-    def get_private_key(self):
-        return str(self.key)
 
 
 # def get_key_path(path:str):
@@ -74,40 +65,6 @@ key.protect("your-strong-passphrase", SymmetricKeyAlgorithm.AES256, HashAlgorith
 and unlock using 
 with my_key.unlock("password"):
 '''
-
-def key_from_file(path:str):
-    #getting both the keys
-    private_key, info = PGPKey.from_file(path)
-    public_key, info = PGPKey.from_file(f"{path}.pub")
-    info = dict(info)
-
-    # Printing the key info for debugging
-    print("-----------------info in the key-----------------")
-    for k in info:
-        print(f"{k}: {info[k]}")
-
-    # Extract user information from the key's UIDs
-    uuid = os.getlogin()
-    hostname = os.getlogin()
-    password = "test_password"
-
-    # If UIDs are available, extract information
-    if 'uids' in info and info['uids']:
-        uid = info['uids'][0]
-        if isinstance(uid, dict):
-            uuid = uid.get('name', uuid)
-            hostname = uid.get('email', hostname)
-            password = uid.get('comment', password)
-
-    # Create a key object
-    key_obj = key(uuid=uuid, hostname=hostname, password=password)
-
-    # Replace the generated key with the loaded key
-    key_obj.key = private_key
-
-    return key_obj
-    
-
 
 def encrypt_message_file(pub_key : str, message_str:str):
     pub_key, info = PGPKey.from_file(pub_key)
@@ -131,18 +88,8 @@ def encrypt_message_file(pub_key : str, message_str:str):
 
     return str(encrypted)
     
-def encrypt_message(pub_key:str, message_str:str):
-    message = PGPMessage.new(f"{message_str}")
-    key_obj,_ = PGPKey.from_blob(pub_key)
-    return str(key_obj.encrypt(message))
 
-def decrypt_message(private_key:str,enc_msg:str):
-    enc_msg = PGPMessage.from_blob(enc_msg)
-    key_obj,_ = PGPKey.from_blob(private_key)
-    decrypted = key_obj.decrypt(enc_msg)
-    return str(decrypted.message)
-
-def decrypt_message_file(priv_key:str, enc_message:str):
+def decrypt_message(priv_key:str, enc_message:str):
     private_key, info = PGPKey.from_file(priv_key)
     info = dict(info)
     # printing the key info
