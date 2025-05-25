@@ -19,8 +19,10 @@ class message_box:
         with self.recv_lock:
             self.recv_messages.append(message)
             if self.redirect_now:
+                print("3) redirecting message to a shared buffer")
                 with self.shared_now_buffer_lock:
                     self.shared_now_buffer.put(message)
+                print("4) the trigger to the wait is released")
                 self.trigger_recv.set()
                 self.redirect_now = False
         
@@ -77,9 +79,12 @@ class message_box:
             self.send_messages_cursor = -1
 
     def get_msg_from_now(self):
+        print("1) event clearing")
         self.redirect_now = True
         self.trigger_recv.clear()
+        print("2) event cleared now waiting")
         self.trigger_recv.wait()
+        print("5) event triggered, now getting the message from shared buffer")
         with self.shared_now_buffer_lock:
             return self.shared_now_buffer.get()
             
