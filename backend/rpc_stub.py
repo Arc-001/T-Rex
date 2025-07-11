@@ -27,7 +27,11 @@ class RPC_Stub_server:
         
         return shared_recv_buffer
     
-
+    def get_server_sock(self):
+        """
+        Returns the socket object of the server
+        """
+        return self.sock
 
     def bat_status_all(self):
         """

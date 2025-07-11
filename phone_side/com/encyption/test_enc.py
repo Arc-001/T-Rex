@@ -22,7 +22,9 @@ with open("test.pub","r") as public_key:
 #encrypting a message
 encr_str = encrypt_message_file("test.pub", "This is ssuppose to be defcon 1 level secrete!!")
 
-print("-------------------decrypting---------------")
+print("-------------------decryption---------------")
 
 decr_str = decrypt_message("test", encr_str)
+yield
+
 

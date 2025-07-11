@@ -135,13 +135,6 @@ class socket_client:
 
 
 
-            
-            
-
-
-
-
-
     def establish_conn(self):
         try:
             self.sock.connect((self.host, self.port))
